@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #007bff;
+        }
+
+        .search-button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .search-button:disabled:hover {
+            background-color: #ccc;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 200px;
+        }
+
+        .results-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .results-content {
+            padding: 20px;
+            min-height: 150px;
+        }
+
+        .result-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .similarity-score {
+            color: #007bff;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .document-name {
+            color: #666;
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        .result-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .result-description {
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 40px 0;
+        }
+
+        .search-stats {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .search-container {
+                padding: 20px;
+            }
+            
+            .search-input, .search-button {
+                padding: 12px;
+                font-size: 16px;
+            }
+            
+            .results-header, .results-content {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-container {
+                padding: 15px;
+            }
+            
+            .results-header, .results-content {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Search Section -->
+        <div class="search-container">
+            <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Masukkan kata kunci pencarian..."
+                id="searchInput"
+            >
+            <button class="search-button" onclick="performSearch()">
+                Cari
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-container">
+            <div class="results-header">
+                <div class="search-stats" id="searchStats">
+                    Masukkan kata kunci untuk memulai pencarian
+                </div>
+            </div>
+            <div class="results-content" id="resultsContent">
+                <div class="no-results">
+                    Hasil pencarian akan ditampilkan di sini
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultsContent = document.getElementById('resultsContent');
+            const searchStats = document.getElementById('searchStats');
+            const searchButton = document.querySelector('.search-button');
+
+            if (searchTerm === '') {
+                resultsContent.innerHTML = '<div class="no-results">Masukkan kata kunci untuk memulai pencarian</div>';
+                searchStats.textContent = 'Masukkan kata kunci untuk memulai pencarian';
+                return;
+            }
+
+            // Tampilkan loading state
+            searchButton.disabled = true;
+            searchButton.textContent = 'Mencari...';
+            resultsContent.innerHTML = '<div class="no-results">Sedang mencari...</div>';
+            searchStats.textContent = 'Sedang mencari...';
+
+            try {
+                // Request ke API dengan method POST
+                const response = await fetch(`http://localhost:5000/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: searchTerm
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Update search stats
+                const resultCount = data.results ? data.results.length : 0;
+                const totalDocs = data.total_documents || resultCount;
+                searchStats.textContent = `Ditemukan ${resultCount} dari ${totalDocs} dokumen untuk "${searchTerm}"`;
+
+                // Tampilkan hasil
+                if (resultCount === 0) {
+                    resultsContent.innerHTML = '<div class="no-results">Tidak ada hasil yang ditemukan</div>';
+                } else {
+                    let resultsHTML = '';
+                    data.results.forEach((item, index) => {
+                        const fileName = item.document.replace(/\.[^/.]+$/, "");
+                        const similarityPercentage = item.similarity_score;
+                        
+                        resultsHTML += `
+                            <div class="result-item">
+                                <div class="result-title">${fileName}</div>
+                                <div class="result-description">
+                                    <div class="similarity-score">Tingkat kemiripan: ${similarityPercentage}</div>
+                                    <div class="document-name">File: ${item.document}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsContent.innerHTML = resultsHTML;
+                }
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                searchStats.textContent = 'Terjadi kesalahan saat mencari';
+                resultsContent.innerHTML = `
+                    <div class="no-results">
+                        Terjadi kesalahan: ${error.message}<br>
+                        <small>Pastikan API server berjalan di http://localhost:5000</small>
+                    </div>
+                `;
+            } finally {
+                // Reset button state
+                searchButton.disabled = false;
+                searchButton.textContent = 'Cari';
+            }
+        }
+
+        // Fungsi untuk escape HTML characters
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enter key support
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        // Auto search saat mengetik (opsional) - dinonaktifkan untuk API call
+        // document.getElementById('searchInput').addEventListener('input', function() {
+        //     const searchTerm = this.value.trim();
+        //     if (searchTerm.length > 2) {
+        //         setTimeout(performSearch, 300);
+        //     }
+        // });
+    </script>
+</body>
+</html>
