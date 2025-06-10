@@ -96,7 +96,7 @@
         <div class="box">
             <h2>Prediksi Kata</h2>
             <div id="predictionsContainer">
-                <p>...</p>
+                <p>Prediksi akan muncul di sini...</p>
             </div>
         </div>
 
@@ -104,7 +104,7 @@
         <div class="box">
             <h2>Dokumen Terkait</h2>
             <div id="documentsContainer">
-                <p>Dokumen terkait..</p>
+                <p>Dokumen terkait akan muncul di sini...</p>
             </div>
         </div>
     </div>
@@ -132,7 +132,7 @@
                 const data = await response.json();
 
                 // Tampilkan prediksi secara dinamis
-                if (data.predictions.length === 0) {
+                if (!data.predictions || data.predictions.length === 0) {
                     predictionsContainer.innerHTML = '<p>Tidak ada prediksi yang ditemukan.</p>';
                 } else {
                     predictionsContainer.innerHTML = data.predictions.map(
@@ -159,7 +159,7 @@
             }
 
             try {
-                const response = await fetch('/predict', {
+                const response = await fetch('/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query })
@@ -172,14 +172,14 @@
                 const data = await response.json();
 
                 // Tampilkan dokumen terkait
-                if (data.relevant_documents.length === 0) {
+                if (!data.hasil || data.hasil.length === 0) {
                     documentsContainer.innerHTML = '<p>Tidak ada dokumen terkait yang ditemukan.</p>';
                 } else {
-                    documentsContainer.innerHTML = data.relevant_documents.map(
+                    documentsContainer.innerHTML = data.hasil.map(
                         doc => `
                             <div class="document-item">
-                                <h3>${doc.title}</h3>
-                                <p>${doc.snippet.replace(new RegExp(query, 'gi'), match => `<span class="highlight">${match}</span>`)}</p>
+                                <h3>${doc.nama_dokumen}</h3>
+                                <p>Similarity: ${doc.skor.toFixed(4)}</p>
                             </div>
                         `
                     ).join('');

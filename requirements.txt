@@ -1,0 +1,5 @@
+Flask
+PyMuPDF
+nltk
+Sastrawi
+scikit-learn
