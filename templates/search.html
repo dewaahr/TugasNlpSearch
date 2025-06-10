@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pencarian dan Prediksi Kata</title>
+    <title>NLP Search</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -87,7 +87,7 @@
         <div class="box">
             <h1>Pencarian</h1>
             <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Masukkan 1–2 kata..." />
+                <input type="text" id="searchInput" placeholder="Masukkan Kata pencarian.." />
                 <button onclick="performSearch()">Cari</button>
             </div>
         </div>
@@ -96,7 +96,7 @@
         <div class="box">
             <h2>Prediksi Kata</h2>
             <div id="predictionsContainer">
-                <p>Prediksi akan muncul di sini...</p>
+                <p>...</p>
             </div>
         </div>
 
@@ -104,19 +104,56 @@
         <div class="box">
             <h2>Dokumen Terkait</h2>
             <div id="documentsContainer">
-                <p>Dokumen terkait akan muncul di sini...</p>
+                <p>Dokumen terkait..</p>
             </div>
         </div>
     </div>
 
     <script>
+        async function fetchPredictions(query) {
+            const predictionsContainer = document.getElementById('predictionsContainer');
+
+            if (!query) {
+                predictionsContainer.innerHTML = '<p>Prediksi akan muncul di sini...</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Tampilkan prediksi secara dinamis
+                if (data.predictions.length === 0) {
+                    predictionsContainer.innerHTML = '<p>Tidak ada prediksi yang ditemukan.</p>';
+                } else {
+                    predictionsContainer.innerHTML = data.predictions.map(
+                        prediction => `<div class="prediction-item">${prediction}</div>`
+                    ).join('');
+                }
+            } catch (error) {
+                predictionsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (event) => {
+            const query = event.target.value.trim();
+            fetchPredictions(query);
+        });
+
         async function performSearch() {
             const query = document.getElementById('searchInput').value.trim();
-            const predictionsContainer = document.getElementById('predictionsContainer');
             const documentsContainer = document.getElementById('documentsContainer');
 
             if (!query) {
-                predictionsContainer.innerHTML = '<p>Masukkan kata kunci untuk memulai pencarian.</p>';
                 documentsContainer.innerHTML = '<p>Masukkan kata kunci untuk mencari dokumen terkait.</p>';
                 return;
             }
@@ -134,15 +171,6 @@
 
                 const data = await response.json();
 
-                // Tampilkan prediksi
-                if (data.predictions.length === 0) {
-                    predictionsContainer.innerHTML = '<p>Tidak ada prediksi yang ditemukan.</p>';
-                } else {
-                    predictionsContainer.innerHTML = data.predictions.map(
-                        prediction => `<div class="prediction-item">${prediction}</div>`
-                    ).join('');
-                }
-
                 // Tampilkan dokumen terkait
                 if (data.relevant_documents.length === 0) {
                     documentsContainer.innerHTML = '<p>Tidak ada dokumen terkait yang ditemukan.</p>';
@@ -157,7 +185,6 @@
                     ).join('');
                 }
             } catch (error) {
-                predictionsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
                 documentsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
             }
         }
